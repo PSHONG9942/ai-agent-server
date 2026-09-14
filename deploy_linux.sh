@@ -17,7 +17,7 @@ source venv/bin/activate
 # 3. 安装 Python 依赖
 echo "[3/4] 📚 正在安装 Python 依赖库..."
 pip install --upgrade pip
-pip install -r AI-Agent/requirements.txt
+pip install -r requirements.txt
 
 # 4. 创建系统后台服务 (systemd)
 echo "[4/4] ⚙️ 正在配置后台常驻服务 (守护进程)..."
@@ -32,7 +32,7 @@ After=network.target
 
 [Service]
 User=$USER
-WorkingDirectory=$CURRENT_DIR/AI-Agent
+WorkingDirectory=$CURRENT_DIR
 ExecStart=$CURRENT_DIR/venv/bin/streamlit run app.py --server.port 8502
 Restart=always
 
