@@ -93,7 +93,7 @@ with st.sidebar:
 client = OpenAI(
     base_url=base_url,
     api_key=api_key if api_key else "dummy_key_to_prevent_crash",
-    timeout=60.0 # 增加 60 秒超时防止请求卡死
+    timeout=120.0 # 增加到 120 秒超时，防止长文本 OCR 被强制打断
 )
 
 # ================= 本地工具实现 (复用原代码) =================
@@ -135,14 +135,14 @@ def extract_slides_text(video_path, sample_interval_sec=10, diff_threshold=35.0,
                 if is_new_slide:
                     slide_count += 1
                     
-                    resized_frame = cv2.resize(frame, (1024, int(1024 * frame.shape[0] / frame.shape[1])))
+                    resized_frame = cv2.resize(frame, (512, int(512 * frame.shape[0] / frame.shape[1])))
                     _, buffer = cv2.imencode('.jpg', resized_frame)
                     base64_image = base64.b64encode(buffer).decode('utf-8')
                     
                     try:
                         vision_resp = client.chat.completions.create(
-                            model="meta/llama-3.2-90b-vision-instruct", # 强制在这个工具里使用专门的视觉模型
-
+                            model="meta/llama-3.2-11b-vision-instruct", # 改用 11B 轻量视觉模型，大幅提升速度
+                            max_tokens=1024,
                             messages=[{
                                 "role": "user",
                                 "content": [
@@ -259,14 +259,15 @@ def extract_pdf_text(file_path):
             
             for i in range(max_pages):
                 page = doc[i]
-                # 渲染页面为图片 (降低缩放比例以加快速度)
-                pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+                # 渲染页面为图片 (缩放至 1.0 加快 API 传输和处理速度)
+                pix = page.get_pixmap(matrix=fitz.Matrix(1.0, 1.0))
                 img_data = pix.tobytes("jpeg")
                 base64_image = base64.b64encode(img_data).decode('utf-8')
                 
                 try:
                     vision_resp = client.chat.completions.create(
-                        model="meta/llama-3.2-90b-vision-instruct",
+                        model="meta/llama-3.2-11b-vision-instruct", # 改用 11B 轻量视觉模型，大幅提升读取速度
+                        max_tokens=2048,
                         messages=[{
                             "role": "user",
                             "content": [
