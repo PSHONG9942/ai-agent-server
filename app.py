@@ -34,7 +34,7 @@ with st.sidebar:
         
     # Nvidia NIM 官方接口地址
     base_url = st.text_input("Base URL", value="https://integrate.api.nvidia.com/v1")
-    model_name = st.text_input("模型名称", value="meta/muse-glimmer-30b")
+    model_name = st.text_input("模型名称", value="google/gemma-4-31b-it")
     
     st.divider()
     st.header("📂 上传文件")
@@ -247,9 +247,46 @@ def extract_pdf_text(file_path):
                     text += extracted + "\n"
         
         if not text.strip():
-            return "PDF 提取完成，但未发现任何文本。这可能是一个扫描版或纯图片的 PDF，当前系统无法读取其中的文字。"
+            st.toast("⚠️ 检测到扫描版 PDF，正在启动视觉大模型强行读取...", icon="🔍")
+            import fitz  # PyMuPDF
+            import base64
             
-        return f"PDF 文本提取成功！内容如下：\n{text}"
+            doc = fitz.open(file_path)
+            ocr_text = []
+            
+            # 为了防止超时和成本过高，限制最多读取前 10 页
+            max_pages = min(len(doc), 10)
+            
+            for i in range(max_pages):
+                page = doc[i]
+                # 渲染页面为图片 (降低缩放比例以加快速度)
+                pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+                img_data = pix.tobytes("jpeg")
+                base64_image = base64.b64encode(img_data).decode('utf-8')
+                
+                try:
+                    vision_resp = client.chat.completions.create(
+                        model="meta/llama-3.2-90b-vision-instruct",
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "请提取这张扫描版 PDF 页面中的所有文字内容，保持原有的段落结构："},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                            ]
+                        }]
+                    )
+                    page_text = vision_resp.choices[0].message.content
+                    ocr_text.append(f"--- 第 {i+1} 页 ---\n{page_text}")
+                except Exception as ve:
+                    st.error(f"第 {i+1} 页视觉读取失败: {str(ve)}")
+            
+            doc.close()
+            
+            text = "\n\n".join(ocr_text)
+            if not text.strip():
+                return "彻底失败：视觉大模型也无法从该文件中提取出有效文字。"
+            
+        return f"PDF 文本提取成功！以下为文本内容：\n{text}"
     except Exception as e:
         return f"PDF 文本提取失败，错误原因: {str(e)}"
 
