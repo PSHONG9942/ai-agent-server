@@ -34,7 +34,7 @@ with st.sidebar:
         
     # Nvidia NIM 官方接口地址
     base_url = st.text_input("Base URL", value="https://integrate.api.nvidia.com/v1")
-    model_name = st.text_input("模型名称", value="meta/llama-3.2-90b-vision-instruct")
+    model_name = st.text_input("模型名称", value="meta/muse-glimmer-30b")
     
     st.divider()
     st.header("📂 上传文件")
@@ -92,7 +92,8 @@ with st.sidebar:
 # ================= 初始化 OpenAI 客户端 =================
 client = OpenAI(
     base_url=base_url,
-    api_key=api_key if api_key else "dummy_key_to_prevent_crash"
+    api_key=api_key if api_key else "dummy_key_to_prevent_crash",
+    timeout=60.0 # 增加 60 秒超时防止请求卡死
 )
 
 # ================= 本地工具实现 (复用原代码) =================
@@ -140,7 +141,8 @@ def extract_slides_text(video_path, sample_interval_sec=10, diff_threshold=35.0,
                     
                     try:
                         vision_resp = client.chat.completions.create(
-                            model=model_name,
+                            model="meta/llama-3.2-90b-vision-instruct", # 强制在这个工具里使用专门的视觉模型
+
                             messages=[{
                                 "role": "user",
                                 "content": [
