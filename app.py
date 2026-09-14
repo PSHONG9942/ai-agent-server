@@ -24,17 +24,17 @@ with st.sidebar:
     st.markdown("[🏠 返回华小老师专区主页](https://sjkcabm.pages.dev)", help="点击回到网站首页")
     st.header("⚙️ 配置参数")
     # 尝试从 Streamlit Secrets 中读取 API Key
-    default_api_key = st.secrets.get("GOOGLE_API_KEY", "") if hasattr(st, "secrets") and "GOOGLE_API_KEY" in st.secrets else ""
+    default_api_key = st.secrets.get("NVIDIA_API_KEY", "") if hasattr(st, "secrets") and "NVIDIA_API_KEY" in st.secrets else ""
     
     if not default_api_key:
-        api_key = st.text_input("API Key (必填)", value="", type="password", placeholder="请填入你的 Google AI Studio API Key")
+        api_key = st.text_input("API Key (必填)", value="", type="password", placeholder="请填入你的 Nvidia NIM API Key")
     else:
         api_key = default_api_key
         st.success("✅ 已自动加载系统内置的 API Key")
         
-    # 2026年最新 Google API 兼容 OpenAI 格式的地址
-    base_url = st.text_input("Base URL", value="https://generativelanguage.googleapis.com/v1beta/openai/")
-    model_name = st.text_input("模型名称", value="gemma-4-31b-it")
+    # Nvidia NIM 官方接口地址
+    base_url = st.text_input("Base URL", value="https://integrate.api.nvidia.com/v1")
+    model_name = st.text_input("模型名称", value="meta/llama-3.2-90b-vision-instruct")
     
     st.divider()
     st.header("📂 上传文件")
@@ -92,7 +92,7 @@ with st.sidebar:
 # ================= 初始化 OpenAI 客户端 =================
 client = OpenAI(
     base_url=base_url,
-    api_key=api_key
+    api_key=api_key if api_key else "dummy_key_to_prevent_crash"
 )
 
 # ================= 本地工具实现 (复用原代码) =================
