@@ -34,7 +34,7 @@ with st.sidebar:
         
     # Nvidia NIM 官方接口地址
     base_url = st.text_input("Base URL", value="https://integrate.api.nvidia.com/v1")
-    model_name = st.text_input("模型名称", value="google/gemma-4-31b-it")
+    model_name = st.text_input("模型名称", value="meta/muse-glimmer-30b")
     
     st.divider()
     st.header("📂 上传文件")
